@@ -1,0 +1,5 @@
+---
+applications:
+ - name: zanona
+   random-route: true
+   memory: 256M
