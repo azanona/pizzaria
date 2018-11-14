@@ -1,6 +1,11 @@
 Para realizar o deploy no bluemix, faz-se necessário a configuração do arquivo de manifest.yaml.
 Após isso, faz-se necessário instalar o CLI do bluemix para efetuar os acessos as instâncias da mesma.
 
+- Variaveis de ambiente
+WATSON_WORKSPACE_ID=VERIFICAR_NO_CONSOLE_BLUEMIX
+WATSON_USERNAME=VERIFICAR_NO_CONSOLE_BLUEMIX
+WATSON_PASSWORD=VERIFICAR_NO_CONSOLE_BLUEMIX
+
 - Login
 bluemix login -u meuusuario@gmail.com -o minhaorganizacao@gmail.com -s dev
 

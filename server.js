@@ -1,63 +1,124 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const AssistantV1 = require('watson-developer-cloud/assistant/v1');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const app = express();
+
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-assistant = new AssistantV1({
-  username: 'apikey',
-  password: 'DjoyTX4EbcJtweFJKnV-BtdS2uTtGr9FSf4Mgz9yHLYE',
+
+const workspace_id = process.env.WATSON_WORKSPACE_ID;
+const assistant = new AssistantV1({
+  username: process.env.WATSON_USERNAME,
+  password: process.env.WATSON_PASSWORD,
   url: 'https://gateway.watsonplatform.net/assistant/api/',
   version: '2018-02-16',
 });
 
-const workspaceId = '314cfb97-428d-4aaa-befe-35f7e6fd272a';
-
-app.post('/bot/debug', (req, res) => {
-  const { text, context = {} } = req.body;
-
-  const params = {
+/* Utilitarios */
+const watsonRequest = (text, context) => {
+  const paramsWatson = {
     input: { text },
-    workspace_id: workspaceId,
     context,
+    workspace_id,
   };
-  console.info(req.body);
-   console.info(text);
-  console.info(context);
 
-  assistant.message(params, (err, response) => {
-    if (err) {
-      console.error(err);
-      res.status(500).json(err);
-    } else {
-      res.json(response);
-    }
+  return new Promise((resolve, reject) => {
+    assistant.message(paramsWatson, (err, response) => {
+      if (err) reject(err);
+      resolve(chatfuelResponse(response));
+    });
   });
+}
+
+const chatfuelResponse = (response) => {
+  const resWatson = {
+    messages: [],
+  }
+  
+  const { output } = response;
+  if (output) {
+    for (var i = 0; i < output.text.length; i++) {        
+      resWatson.messages.push({ text: output.text[i] });    
+    }
+    resWatson.set_attributes.context = response.context;
+  }
+
+  return resWatson;
+};
+
+/** Métodos **/
+
+var ctx = {};
+app.post('/bot/debug/', (req, res) => {
+  const {
+    body: {
+      text,
+      sessions,
+    },
+   } = req;
+
+  watsonRequest(text, context)
+    .then((result) => {
+      res.json(result);
+    })
+    .catch(console.error);
 });
 
-app.get('/bot/', (req, res) => {
-  const { mensagem, context = {} } = req.query;
-
+app.post('/bot/cf', (req, res) => {
+  const { text } = req.body;
+  
   const paramsWatson = {
-    input: { mensagem },
-    workspace_id: workspaceId,
-    context: context,
+    input: { text },
+    context,
+    workspace_id,
   };
-console.info(mensagem)
-	console.info(context);
-  assistant.message(paramsWatson, (err, response) => {
+  
+	assistant.message(paramsWatson, (err, response) => {
       if (err) res.status(500).json(err);
       let resWatson = {
-      	messages: []
+      	messages: [],
       }
       if (response.output) {    
-	      let output = response.output;    
+        let { output } = response;
 	      for (var i = 0; i < output.text.length; i++) {        
-		  resWatson.messages.push({ text: output.text[i] });    
-	      }
-	      //resWatson.set_attributes  = { context: response.context };  
+		      resWatson.messages.push({ text: output.text[i] });    
+        }
+        resWatson.set_attributes.context = response.context;
       }
+      console.info(resWatson);
+      res.json(resWatson);
+    });
+});
+
+/**  Funcionando **/
+app.post('/bot', (req, res) => {
+  const { text, context = {} } = req.body;
+  
+  const paramsWatson = {
+    input: { text },
+    context,
+    workspace_id,
+  };
+  console.info(paramsWatson);
+
+	assistant.message(paramsWatson, (err, response) => {
+      if (err) res.status(500).json(err);
+      let resWatson = {
+      	messages: [],
+      }
+      if (response.output) {    
+        let { output } = response;
+	      for (var i = 0; i < output.text.length; i++) {        
+		      resWatson.messages.push({ text: output.text[i] });    
+        }
+        resWatson.context = response.context;
+      }
+      console.info(resWatson);
       res.json(resWatson);
     });
 });
@@ -66,4 +127,3 @@ app.use(express.static(__dirname + '/html'));
 
 var port = process.env.PORT || 3000
 app.listen(port, () => console.log(`Running on port ${port}`));
-
