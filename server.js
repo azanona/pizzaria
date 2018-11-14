@@ -20,7 +20,7 @@ const assistant = new AssistantV1({
 });
 
 /* Utilitarios */
-const watsonRequest = (text, context) => {
+const watsonRequest = (text, context = {}) => {
   const paramsWatson = {
     input: { text },
     context,
@@ -45,7 +45,7 @@ const chatfuelResponse = (response) => {
     for (var i = 0; i < output.text.length; i++) {        
       resWatson.messages.push({ text: output.text[i] });    
     }
-    resWatson.set_attributes.context = response.context;
+    //resWatson.set_attributes.context = response.context;
   }
 
   return resWatson;
@@ -59,10 +59,15 @@ app.post('/bot/debug/', (req, res) => {
     body: {
       text,
       sessions,
+      chatfuel_user_id,
+      source
     },
    } = req;
-
-  watsonRequest(text, context)
+   console.info(sessions);
+   console.info(chatfuel_user_id);
+   console.info(source);
+   console.info(req.body);
+  watsonRequest(text, context = {})
     .then((result) => {
       res.json(result);
     })
@@ -126,4 +131,4 @@ app.post('/bot', (req, res) => {
 app.use(express.static(__dirname + '/html'));
 
 var port = process.env.PORT || 3000
-app.listen(port, () => console.log(`Running on port ${port}`));
+app.listen(port,  () => console.log(`Running on port ${port}`));
