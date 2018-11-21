@@ -20,7 +20,7 @@ const assistant = new AssistantV1({
 });
 
 /* Utilitarios */
-const watsonRequest = (text, context = {}) => {
+const watsonRequest = (text = {}, context = {}) => {
   const paramsWatson = {
     input: { text },
     context,
@@ -36,16 +36,19 @@ const watsonRequest = (text, context = {}) => {
 }
 
 const chatfuelResponse = (response) => {
-  const resWatson = {
-    messages: [],
-  }
-  
   const { output } = response;
+  const resWatson = {
+    messages: [],    
+    set_attributes: {
+      context: {},
+    }
+  }
+    
   if (output) {
     for (var i = 0; i < output.text.length; i++) {        
       resWatson.messages.push({ text: output.text[i] });    
     }
-    //resWatson.set_attributes.context = response.context;
+    resWatson.set_attributes.context = response.context;
   }
 
   return resWatson;
@@ -53,82 +56,26 @@ const chatfuelResponse = (response) => {
 
 /** Métodos **/
 
-var ctx = {};
-app.post('/bot/debug/', (req, res) => {
+app.post('/bot', (req, res) => {
   const {
-    body: {
+    body: {      
       text,
-      sessions,
-      chatfuel_user_id,
-      source
+      context,
     },
    } = req;
-   console.info(sessions);
-   console.info(chatfuel_user_id);
-   console.info(source);
-   console.info(req.body);
-  watsonRequest(text, context = {})
+
+  console.info('chatfuel text: ' + text);
+  console.info('chatfuel context: ' + context);
+  console.info('chatfuel body: ' + req.body);
+
+  watsonRequest(text, context)
     .then((result) => {
       res.json(result);
     })
     .catch(console.error);
 });
 
-app.post('/bot/cf', (req, res) => {
-  const { text } = req.body;
-  
-  const paramsWatson = {
-    input: { text },
-    context,
-    workspace_id,
-  };
-  
-	assistant.message(paramsWatson, (err, response) => {
-      if (err) res.status(500).json(err);
-      let resWatson = {
-      	messages: [],
-      }
-      if (response.output) {    
-        let { output } = response;
-	      for (var i = 0; i < output.text.length; i++) {        
-		      resWatson.messages.push({ text: output.text[i] });    
-        }
-        resWatson.set_attributes.context = response.context;
-      }
-      console.info(resWatson);
-      res.json(resWatson);
-    });
-});
-
-/**  Funcionando **/
-app.post('/bot', (req, res) => {
-  const { text, context = {} } = req.body;
-  
-  const paramsWatson = {
-    input: { text },
-    context,
-    workspace_id,
-  };
-  console.info(paramsWatson);
-
-	assistant.message(paramsWatson, (err, response) => {
-      if (err) res.status(500).json(err);
-      let resWatson = {
-      	messages: [],
-      }
-      if (response.output) {    
-        let { output } = response;
-	      for (var i = 0; i < output.text.length; i++) {        
-		      resWatson.messages.push({ text: output.text[i] });    
-        }
-        resWatson.context = response.context;
-      }
-      console.info(resWatson);
-      res.json(resWatson);
-    });
-});
-
 app.use(express.static(__dirname + '/html'));
 
-var port = process.env.PORT || 3000
+var port = process.env.PORT || 3000;
 app.listen(port,  () => console.log(`Running on port ${port}`));
